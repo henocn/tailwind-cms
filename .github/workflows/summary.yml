@@ -48,5 +48,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `Résumé automatique :\n\n${{ steps.ai_summary.outputs.summary }}`
+              body: `Titre : ${{ github.event.issue.title }}\n\nRésumé : ${{ steps.inference.outputs.response }}`
             })
