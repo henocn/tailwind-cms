@@ -69,24 +69,66 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   
   generateTailwindCode: () => {
     const { currentArticle } = get()
-    if (!currentArticle || currentArticle.blocks.length === 0) return '<div class="p-4">\n  <!-- Aucun contenu -->\n</div>'
+    if (!currentArticle || currentArticle.blocks.length === 0) {
+      return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Article Tailwind</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+        <p class="text-gray-500 text-center">Aucun contenu disponible</p>
+    </div>
+</body>
+</html>`
+    }
     
     const blocksCode = currentArticle.blocks.map(block => {
-      const { styles } = block
+      const s = block.styles
       const classes = [
-        styles.bold ? 'font-bold' : '',
-        styles.italic ? 'italic' : '',
-        styles.underline ? 'underline' : '',
-        `text-${styles.fontSize}`,
-        `text-${styles.color}`,
-        `text-${styles.alignment}`,
+        s.bold ? 'font-bold' : '',
+        s.italic ? 'italic' : '',
+        s.underline ? 'underline' : '',
+        `text-${s.fontSize}`,
+        s.fontWeight !== 'normal' ? `font-${s.fontWeight}` : '',
+        `text-${s.color}`,
+        s.backgroundColor !== 'transparent' ? `bg-${s.backgroundColor}` : '',
+        `text-${s.alignment}`,
+        s.padding !== '0' ? `p-${s.padding}` : '',
+        s.margin !== '0' ? `m-${s.margin}` : '',
+        s.borderWidth !== '0' ? `border-${s.borderWidth}` : '',
+        s.borderColor !== 'transparent' ? `border-${s.borderColor}` : '',
+        s.borderRadius !== 'none' ? `rounded-${s.borderRadius}` : '',
+        s.lineHeight !== 'normal' ? `leading-${s.lineHeight}` : '',
+        s.letterSpacing !== 'normal' ? `tracking-${s.letterSpacing}` : '',
         'mb-4'
       ].filter(Boolean).join(' ')
       
-      const tag = block.type === 'heading' ? 'h2' : 'p'
-      return `  <${tag} class="${classes}">${block.content}</${tag}>`
+      let tag = 'p'
+      if (block.type === 'heading') tag = 'h2'
+      if (block.type === 'quote') tag = 'blockquote'
+      
+      const extraClasses = block.type === 'quote' ? ' border-l-4 border-gray-300 pl-4' : ''
+      
+      return `        <${tag} class="${classes}${extraClasses}">${block.content}</${tag}>`
     }).join('\n')
     
-    return `<div class="max-w-4xl mx-auto p-6">\n${blocksCode}\n</div>`
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${currentArticle.title}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6">
+${blocksCode}
+    </div>
+</body>
+</html>`
   }
 }))
