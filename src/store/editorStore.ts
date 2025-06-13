@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { Article, ArticleBlock, TextStyle } from '../types'
+import type { Article, ArticleBlock, TextStyle } from '../types'
 
 
 
@@ -16,6 +16,7 @@ interface EditorStore {
   setSelectedBlock: (id: string | null) => void
   togglePreviewMode: () => void
   generateTailwindCode: () => string
+  initializeArticle: () => void
 }
 
 export const useEditorStore = create<EditorStore>((set, get) => ({
@@ -23,12 +24,23 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   selectedBlockId: null,
   isPreviewMode: false,
   
+  initializeArticle: () => set({
+    currentArticle: {
+      id: Math.random().toString(36).substr(2, 9),
+      title: 'Nouvel Article',
+      blocks: [],
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+  }),
+  
   setCurrentArticle: (article) => set({ currentArticle: article }),
   
   addBlock: (block) => set((state) => ({
     currentArticle: state.currentArticle ? {
       ...state.currentArticle,
-      blocks: [...state.currentArticle.blocks, block]
+      blocks: [...state.currentArticle.blocks, block],
+      updatedAt: new Date()
     } : null
   })),
   
@@ -37,15 +49,18 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
       ...state.currentArticle,
       blocks: state.currentArticle.blocks.map(block => 
         block.id === id ? { ...block, ...updates } : block
-      )
+      ),
+      updatedAt: new Date()
     } : null
   })),
   
   deleteBlock: (id) => set((state) => ({
     currentArticle: state.currentArticle ? {
       ...state.currentArticle,
-      blocks: state.currentArticle.blocks.filter(block => block.id !== id)
-    } : null
+      blocks: state.currentArticle.blocks.filter(block => block.id !== id),
+      updatedAt: new Date()
+    } : null,
+    selectedBlockId: state.selectedBlockId === id ? null : state.selectedBlockId
   })),
   
   setSelectedBlock: (id) => set({ selectedBlockId: id }),
@@ -54,9 +69,9 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
   
   generateTailwindCode: () => {
     const { currentArticle } = get()
-    if (!currentArticle) return ''
+    if (!currentArticle || currentArticle.blocks.length === 0) return '<div class="p-4">\n  <!-- Aucun contenu -->\n</div>'
     
-    return currentArticle.blocks.map(block => {
+    const blocksCode = currentArticle.blocks.map(block => {
       const { styles } = block
       const classes = [
         styles.bold ? 'font-bold' : '',
@@ -64,10 +79,14 @@ export const useEditorStore = create<EditorStore>((set, get) => ({
         styles.underline ? 'underline' : '',
         `text-${styles.fontSize}`,
         `text-${styles.color}`,
-        `text-${styles.alignment}`
+        `text-${styles.alignment}`,
+        'mb-4'
       ].filter(Boolean).join(' ')
       
-      return `<${block.type} class="${classes}">${block.content}</${block.type}>`
+      const tag = block.type === 'heading' ? 'h2' : 'p'
+      return `  <${tag} class="${classes}">${block.content}</${tag}>`
     }).join('\n')
+    
+    return `<div class="max-w-4xl mx-auto p-6">\n${blocksCode}\n</div>`
   }
 }))
